@@ -37,7 +37,7 @@
   */
 #define HAL_MODULE_ENABLED
 
-  /* #define HAL_ADC_MODULE_ENABLED   */
+#define HAL_ADC_MODULE_ENABLED
 /* #define HAL_CRYP_MODULE_ENABLED   */
 /* #define HAL_CAN_MODULE_ENABLED   */
 /* #define HAL_CRC_MODULE_ENABLED   */
@@ -53,7 +53,7 @@
 /* #define HAL_SRAM_MODULE_ENABLED   */
 /* #define HAL_SDRAM_MODULE_ENABLED   */
 /* #define HAL_HASH_MODULE_ENABLED   */
-/* #define HAL_I2C_MODULE_ENABLED   */
+#define HAL_I2C_MODULE_ENABLED
 /* #define HAL_I2S_MODULE_ENABLED   */
 #define HAL_IWDG_MODULE_ENABLED
 /* #define HAL_LTDC_MODULE_ENABLED   */
@@ -358,9 +358,7 @@
  #include "stm32f4xx_hal_hash.h"
 #endif /* HAL_HASH_MODULE_ENABLED */
 
-#ifdef HAL_I2C_MODULE_ENABLED
- #include "stm32f4xx_hal_i2c.h"
-#endif /* HAL_I2C_MODULE_ENABLED */
+
 
 #ifdef HAL_SMBUS_MODULE_ENABLED
  #include "stm32f4xx_hal_smbus.h"

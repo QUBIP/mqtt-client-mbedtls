@@ -17,11 +17,8 @@
 #include "rng.h"
 #include "platform.h"
 #include "leds.h"
-#include "nanomodbus_interface.h"
 #include "iperf_server.h"
-#include "usart.h"
-#include "onewire.h"
-#include "DS18B20.h"
+
 
 /* Private typedef -----------------------------------------------------------*/
 
@@ -87,9 +84,6 @@ void MqttClientPubTask(void const *argument)
 	TickType_t xLastWakeTime = xTaskGetTickCount();
 	const TickType_t xFrequency = 1000;
 
-	OneWire_Handle_t handleOneWire;
-	float temperature = 0.0;
-
 	// 1) Check the status of the network link:
 	// - If the link is inactive, wait until it becomes active.
 	// - If the link is active, proceed to the next step.
@@ -103,9 +97,6 @@ void MqttClientPubTask(void const *argument)
 	// - If the connection is successful, sends MQTT messages.
 
 	// Note: In case of IP address change, it is necessary to reconnect.
-
-	// 4) Init the DS18B20 temperature sensor
-
 
 	for(;;)
 	{
@@ -143,12 +134,8 @@ void MqttClientPubTask(void const *argument)
 			continue;
 		}
 
-		// Init the DS18B20 temperature sensor
-		MQTT_PUB_TASK_DEBUG_LOG("[MQTT_PUB_TASK] INFO: Initializing temperature sensor DS18B20\n");
-		DS18B20_Init(&handleOneWire, &huart5);
-		MQTT_PUB_TASK_DEBUG_LOG("[MQTT_PUB_TASK] INFO: Temperature sensor initialized\n");
-
 		need_to_reconnect = 0;
+
 		uint8_t error = 0;
 		do
 		{
@@ -160,10 +147,6 @@ void MqttClientPubTask(void const *argument)
 				continue;
 			}
 
-			// Reading temperature sensor
-			DS18B20_SampleTemp(&handleOneWire);
-			temperature = DS18B20_ReadTemp(&handleOneWire);
-
 			// Composing the message to be sent
 			snprintf(str, sizeof(str),
 			         "{\n"
@@ -172,12 +155,12 @@ void MqttClientPubTask(void const *argument)
 			         "}",
 			         ulNotifiedValue
 			        );
-
+			//snprintf(str, sizeof(str), "MQTT message from STM32: %lu", ulNotifiedValue);
 			message.payload = (void*)str;
 			message.payloadlen = strlen(str);
 
 			// Send the message at topic "2023/test"
-			if(MQTTPublish(&mqttClient, "2023/test", &message) != MQTT_SUCCESS)
+			if(MQTTPublish(&mqttClient, "2025/temperature", &message) != MQTT_SUCCESS)
 			{
 				MQTTCloseSession(&mqttClient);
 				mqtt_network_disconnect(&mqttNet);
@@ -187,34 +170,6 @@ void MqttClientPubTask(void const *argument)
 
 			MQTT_PUB_TASK_DEBUG_LOG("[MQTT_PUB_TASK] INFO: [%lu] I've sent a message!\n", ulNotifiedValue);
 			leds_blink_on_mqtt_message_sent();
-
-
-			// Send temperature
-			memset(str, 0, sizeof(str));
-			// Composing the message to be sent
-			snprintf(str, sizeof(str),
-			         "{\n"
-			         "  \"device\": \"STM32\",\n"
-			         "  \"temperature\": %f\n"
-			         "}",
-			         temperature
-			        );
-
-			message.payload = (void*)str;
-			message.payloadlen = strlen(str);
-
-			// Send the message at topic "2025/temperature"
-			if(MQTTPublish(&mqttClient, "2025/temperature", &message) != MQTT_SUCCESS)
-			{
-				MQTTCloseSession(&mqttClient);
-				mqtt_network_disconnect(&mqttNet);
-				error = 1;
-				continue;
-			}
-
-			MQTT_PUB_TASK_DEBUG_LOG("[MQTT_PUB_TASK] INFO: [%f] I've sent a message!\n", temperature);
-			leds_blink_on_mqtt_message_sent();
-
 
 			// The vTaskDelayUntil() suspend a task for up to an absolute amount of time,
 			// ensuring precise periodicity even in the case of interruptions.
@@ -305,17 +260,6 @@ int MqttConnectBroker(void)
 
   // Subscribe to the desired topic
   ret = MQTTSubscribe(&mqttClient, "2023/test", QOS0, MqttMessageArrived);
-  if(ret != MQTT_SUCCESS)
-  {
-	  // Handle subscription failure
-	  MQTT_PUB_TASK_DEBUG_LOG("[MQTT_PUB_TASK] ERROR: MQTTSubscribe failed.\n");
-	  MQTTCloseSession(&mqttClient);
-	  mqtt_network_disconnect(&mqttNet);
-	  return ret;
-  }
-
-  // Subscribe to 2025/temperature topic
-  ret = MQTTSubscribe(&mqttClient, "2025/temperature", QOS0, MqttMessageArrived);
   if(ret != MQTT_SUCCESS)
   {
 	  // Handle subscription failure

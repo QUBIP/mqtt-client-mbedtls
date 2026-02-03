@@ -46,6 +46,11 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
+#define MQTT_PUB_TASK_DEBUG
+#define MQTT_SUB_TASK_DEBUG
+#define MQTT_INTERFACE_DEBUG
+
+
 #ifdef DEBUG
 #include <stdarg.h>
 //#define DEBUG_LOG(message, ...) do { printf(message, ##__VA_ARGS__); } while(0)
@@ -98,16 +103,14 @@ void Error_Handler(void);
 #define RMII_TXD0_GPIO_Port GPIOG
 #define LD2_Pin GPIO_PIN_7
 #define LD2_GPIO_Port GPIOB
-#define ONEWIRE_Pin GPIO_PIN_12
-#define ONEWIRE_GPIO_Port GPIOC
 /* USER CODE BEGIN Private defines */
 
 // ----------------------------------------------------------------------------
 // MODBUS Configuration Defines
 // ----------------------------------------------------------------------------
 
-#define MOBBUS_PLC_IP 		"192.168.101.40"
-#define MODBUS_PLC_PORT 	"5002"
+#define MOBBUS_PLC_IP 		"192.168.101.212"
+#define MODBUS_PLC_PORT 	"502"
 #define MODBUS_PLC_REGISTER 32770
 
 // ----------------------------------------------------------------------------
@@ -117,7 +120,7 @@ void Error_Handler(void);
 //#define TLS_1V2
 #define TLS_1V3
 
-#define BROKER_IP		"192.168.101.63"
+#define BROKER_IP		"broker.smartfactory.it"
 #define MQTT_BUFSIZE	1024
 
 // TLS V1.2
@@ -126,7 +129,7 @@ void Error_Handler(void);
 #endif
 // TLS V1.3
 #if !defined(TLS_1V2) && defined(TLS_1V3)
-#define MQTT_PORT		"1883"
+#define MQTT_PORT		"8884"
 #endif
 
 

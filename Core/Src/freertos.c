@@ -31,7 +31,6 @@
 #include "platform.h"
 #include "iperf_server.h"
 #include "mqtt_task.h"
-#include "modbus_task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,12 +57,14 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 extern struct netif gnetif; //extern gnetif
+osThreadId defaultTaskHandle;
+osThreadId tempTaskHandle;
 /* Stack task size*/
-static StackType_t modbusClientTask_stack[ MODBUS_CLIENT_TASK_STACK_SIZE / sizeof( StackType_t ) ];
+
 /* Task Control Block */
 static StaticTask_t modbusClientTask_tcb;
 /* USER CODE END Variables */
-osThreadId defaultTaskHandle;
+
 
 // Use this prefix to place a variable in ccmram
 // __attribute__((section(".ccmram")))
@@ -95,7 +96,7 @@ const HeapRegion_t xHeapRegions[] =
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 /* USER CODE END FunctionPrototypes */
-
+void StartTempTask(void *argument);
 void StartDefaultTask(void const * argument);
 
 extern void MX_LWIP_Init(void);
@@ -240,6 +241,7 @@ void MX_FREERTOS_Init(void)
   /* Pass the array into vPortDefineHeapRegions(). */
   vPortDefineHeapRegions( xHeapRegions );
   mbedtls_platform_set_calloc_free(my_calloc, my_free);
+  Sensor_Init();
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -252,6 +254,7 @@ void MX_FREERTOS_Init(void)
 
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
+
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -265,6 +268,8 @@ void MX_FREERTOS_Init(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  osThreadDef(tempTask, StartTempTask, osPriorityLow, 0, 256);
+  tempTaskHandle = osThreadCreate(osThread(tempTask), NULL);
   /* USER CODE END RTOS_THREADS */
 
 }
@@ -294,8 +299,7 @@ void StartDefaultTask(void const * argument)
 
   // Stack size calculated with static stack analyzer
   // Publish mqtt task
-  //osThreadDef(mqttClientPubTask, MqttClientPubTask, osPriorityNormal, 0, (8.5 * 1024) / sizeof( StackType_t ) );
-  osThreadDef(mqttClientPubTask, MqttClientPubTask, osPriorityNormal, 0, (9.5 * 1024) / sizeof( StackType_t ) );
+  osThreadDef(mqttClientPubTask, MqttClientPubTask, osPriorityNormal, 0, (8.5 * 1024) / sizeof( StackType_t ) );
   mqttClientPubTaskHandle = osThreadCreate(osThread(mqttClientPubTask), NULL);
   if(mqttClientPubTaskHandle == NULL)
   {
@@ -326,26 +330,7 @@ void StartDefaultTask(void const * argument)
   // Modbus task
   //osThreadDef(modbusClientTask, ModbusClientTask, osPriorityNormal, 0, MODBUS_CLIENT_TASK_STACK_SIZE / sizeof( StackType_t ));
   /* Creazione del task utilizzando l'allocazione statica di FreeRTOS */
-  TaskHandle_t modbusClientTaskHandle = xTaskCreateStatic
-		  (
-			  ModbusClientTask,       		/* Function that implements the task. */
-			  "ModbusClientTask",          	/* Text name for the task. */
-			  MODBUS_CLIENT_TASK_STACK_SIZE / sizeof( StackType_t ), /* Number of indexes in the xStack array. */
-			  NULL,                 		/* Parameter passed into the task. */
-			  osPriorityNormal,     		/* Priority at which the task is created. */
-			  modbusClientTask_stack,       /* Array to use as the task's stack. */
-			  &modbusClientTask_tcb			/* Variable to hold the task's data structure. */
-		  );
 
-  if(modbusClientTaskHandle == NULL)
-  {
-	  FREERTOS_DEBUG_LOG("[FREERTOS] ERROR: Failed to create modbusClient Task\n");
-	  while(1)
-	  {
-		  leds_blink_freertos_task_creation_failed();
-		  // wait a system reset, caused by iwdg
-	  }
-  }
 
   /* Infinite loop */
   for(;;)
@@ -358,4 +343,20 @@ void StartDefaultTask(void const * argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+void StartTempTask(void *argument)
+{
+	while (mqttClientPubTaskHandle == NULL)
+	{
+	    osDelay(100);
+	}
+
+  for (;;)
+  {
+    float t = Sensor_Read_Temperature();
+    uint32_t temp_x100 = (uint32_t)(t * 100.0f);
+    xTaskNotify(mqttClientPubTaskHandle, temp_x100, eSetValueWithOverwrite);
+    DEBUG_LOG("[TEMP] %.2f C\r\n", t);
+    osDelay(1000);
+  }
+}
 /* USER CODE END Application */
