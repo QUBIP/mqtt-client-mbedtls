@@ -352,10 +352,17 @@ void StartTempTask(void *argument)
 
   for (;;)
   {
-    float t = Sensor_Read_Temperature();
-    uint32_t temp_x100 = (uint32_t)(t * 100.0f);
+    int t = Sensor_Read_Temperature();
+    /*uint32_t temp_x100 = (uint32_t)(t * 100.0f);
     xTaskNotify(mqttClientPubTaskHandle, temp_x100, eSetValueWithOverwrite);
-    DEBUG_LOG("[TEMP] %.2f C\r\n", t);
+    DEBUG_LOG("[ciccio] %.2f C\r\n", t);
+    osDelay(1000);*/
+
+
+    float voltage = (t * 3.3f) / 4095.0f;
+    float temperature = voltage * 100.0f;
+
+    DEBUG_LOG("[DEBUG] %.2f C\r\n", voltage);
     osDelay(1000);
   }
 }

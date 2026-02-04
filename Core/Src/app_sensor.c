@@ -1,5 +1,6 @@
-#include "app_sensor.h"
 
+#include "app_sensor.h"
+#include "platform.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_adc.h"   // <-- QUESTO MANCAVA
 
@@ -16,18 +17,18 @@ void Sensor_Init(void)
 }
 
 /* ========================================================= */
-float Sensor_Read_Temperature(void)
+float  Sensor_Read_Temperature(void)
 {
     HAL_ADC_Start(&hadc1);
     HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 
-    uint32_t raw = HAL_ADC_GetValue(&hadc1);
+    float raw = HAL_ADC_GetValue(&hadc1);
 
-    /* conversione base (identica a sensor_test, adattabile) */
+    /* conversione base (identica a sensor_test, adattabile)
     float voltage = (raw * 3.3f) / 4095.0f;
-    float temperature = voltage * 100.0f;
+    float temperature = voltage * 100.0f;*/
 
-    return voltage;
+    return raw;
 }
 
 /* ========================================================= */
@@ -40,7 +41,7 @@ static void ADC1_Init(void)
 
     /* GPIO PA0 -> ADC1_IN0 (ESEMPIO, usa il pin reale) */
     GPIO_InitTypeDef GPIO_InitStruct = {0};
-    GPIO_InitStruct.Pin  = GPIO_PIN_0;
+    GPIO_InitStruct.Pin  = GPIO_PIN_3;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -58,7 +59,7 @@ static void ADC1_Init(void)
     HAL_ADC_Init(&hadc1);
 
     ADC_ChannelConfTypeDef sConfig = {0};
-    sConfig.Channel      = ADC_CHANNEL_0;   // PA0
+    sConfig.Channel      = ADC_CHANNEL_3;   // PA1
     sConfig.Rank         = 1;
     sConfig.SamplingTime = ADC_SAMPLETIME_144CYCLES;
 

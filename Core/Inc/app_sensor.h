@@ -2,6 +2,7 @@
 #define APP_SENSOR_H
 
 void Sensor_Init(void);
-float Sensor_Read_Temperature(void);
+float  Sensor_Read_Temperature(void);
+
 
 #endif
