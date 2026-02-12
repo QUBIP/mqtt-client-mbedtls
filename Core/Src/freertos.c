@@ -360,9 +360,9 @@ void StartTempTask(void *argument)
 
 
     float voltage = (t * 3.3f) / 4095.0f;
-    float temperature = voltage * 100.0f;
+    float temperature = (voltage-0.4)/0.0195;
 
-    DEBUG_LOG("[DEBUG] %.2f C\r\n", voltage);
+    DEBUG_LOG("[DEBUG] %.2f C\r\n", temperature);
     osDelay(1000);
   }
 }
